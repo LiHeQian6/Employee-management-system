@@ -39,7 +39,7 @@ public class LoginActivity extends AppCompatActivity {
                 finish();
             }
             else
-                Toast.makeText(LoginActivity.this,"用户名或密码错误",Toast.LENGTH_SHORT).show();
+                Toast.makeText(LoginActivity.this,"账号或密码错误",Toast.LENGTH_SHORT).show();
         }
     };
 
@@ -63,7 +63,7 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void run() {
                 try {
-                    URL url = new URL("http://192.168.1.102:8080/EmployeeManagementSystem_war_exploded/LoginServlet?name="+name.getText().toString()+"&pwd="+pwd.getText().toString());
+                    URL url = new URL("http://10.7.92.249:8080/EmployeeManagementSystem_war_exploded/LoginServlet?name="+name.getText().toString()+"&pwd="+pwd.getText().toString());
                     URLConnection conn = url.openConnection();
                     InputStream in = conn.getInputStream();
                     BufferedReader reader = new BufferedReader(new InputStreamReader(in, "utf-8"));

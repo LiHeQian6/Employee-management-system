@@ -13,15 +13,15 @@ import com.example.employeemanagementsystem.bean.Pay_level;
 
 import java.util.List;
 
-public class CustomAdapter<T> extends BaseAdapter {
+public class CustomAdapter extends BaseAdapter {
     private Context context;
-    private List<T> data;
+    private List data;
     private int item_layout_id;
 
     public CustomAdapter() {
     }
 
-    public CustomAdapter(Context context, List<T> data, int item_layout_id) {
+    public CustomAdapter(Context context, List data, int item_layout_id) {
         this.context = context;
         this.data = data;
         this.item_layout_id = item_layout_id;

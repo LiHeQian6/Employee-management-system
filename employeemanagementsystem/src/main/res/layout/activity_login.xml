@@ -39,12 +39,18 @@
                     android:layout_height="wrap_content">
         <Button
                 android:id="@+id/login"
+                android:background="#3CC3F5"
+                android:textColor="@android:color/white"
+                android:layout_margin="10dp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="登录"/>
         <Button
                 android:id="@+id/register"
+                android:background="#3CC3F5"
+                android:textColor="@android:color/white"
+                android:layout_margin="10dp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"

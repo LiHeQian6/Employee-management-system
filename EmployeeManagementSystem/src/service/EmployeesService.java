@@ -1,9 +1,7 @@
 package service;
 
 import bean.Employee;
-import bean.Pay_level;
 import dao.EmployeeDao;
-import dao.Pay_levelDao;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;

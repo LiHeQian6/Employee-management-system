@@ -7,12 +7,16 @@ import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.*;
 import com.example.employeemanagementsystem.CustomAdapter;
+import com.example.employeemanagementsystem.DiaLog;
 import com.example.employeemanagementsystem.R;
 import com.example.employeemanagementsystem.bean.Jobs;
 import org.json.JSONArray;
@@ -53,13 +57,15 @@ public class Position extends Fragment {
     };
     private List list = new ArrayList();
     private List data = new ArrayList();
+    private List change = new ArrayList();
+    private List delete = new ArrayList();
     private ListView listView;
     private CustomAdapter adapter;
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         final View view=inflater.inflate(R.layout.position,container,false);
-        ImageView add=view.findViewById(R.id.add);
+        final ImageView add=view.findViewById(R.id.add);
         Button quary=view.findViewById(R.id.query);
         listView=view.findViewById(R.id.lv_name);
         GetData();
@@ -73,10 +79,52 @@ public class Position extends Fragment {
                     QuaryPosition(text.getText().toString());
             }
         });
+        /**
+         * 添加数据
+         */
         add.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                FragmentManager fragmentManager=getFragmentManager();
+                FragmentTransaction transaction=fragmentManager.beginTransaction();
+                Jobs jobs=new Jobs();
+                DiaLog diaLog=new DiaLog(jobs, 1, new DiaLog.onChangeListener() {
+                    @Override
+                    public boolean getData(Object obj) {
+                        Jobs jobs=(Jobs) obj;
+                        for (int i = 0; i <list.size() ; i++) {
+                            if(((Jobs)list.get(i)).getName().equals(jobs.getName())){
+                                Toast.makeText(getContext(),"已存在该职位",Toast.LENGTH_SHORT).show();
+                                return false;
+                            }
+                        }
+                        list.add(jobs);
+                        data.add(jobs);
+                        change.add(jobs);
+                        adapter.notifyDataSetChanged();
+                        Toast.makeText(getContext(),"添加成功",Toast.LENGTH_SHORT).show();
+                        return true;
+                    }
+                });
+                if(!diaLog.isAdded())
+                    transaction.add(diaLog,"INFO");
+                transaction.show(diaLog);
+                transaction.commit();
+            }
+        });
+        /**
+         * 显示数据
+         */
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                FragmentManager fragmentManager=getFragmentManager();
+                FragmentTransaction transaction=fragmentManager.beginTransaction();
+                DiaLog diaLog=new DiaLog(data.get(position),0);
+                if(!diaLog.isAdded())
+                    transaction.add(diaLog,"INFO");
+                transaction.show(diaLog);
+                transaction.commit();
             }
         });
         return view;
@@ -106,7 +154,7 @@ public class Position extends Fragment {
             public void run() {
 
                 try {
-                    URL url = new URL("http://192.168.1.102:8080/EmployeeManagementSystem_war_exploded/PositionServlet");
+                    URL url = new URL("http://10.7.92.249:8080/EmployeeManagementSystem_war_exploded/PositionServlet");
                     URLConnection conn = url.openConnection();
                     InputStream in = conn.getInputStream();
                     BufferedReader reader = new BufferedReader(new InputStreamReader(in, "utf-8"));
@@ -114,7 +162,6 @@ public class Position extends Fragment {
                     List list = new ArrayList();
                     try {
                         JSONArray array=new JSONArray(jsonString);
-
                         for (int i = 0; i < array.length(); i++) {
                             JSONObject jsonObject=array.getJSONObject(i);
                             Jobs jobs=new Jobs();

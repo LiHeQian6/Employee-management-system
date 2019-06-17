@@ -18,6 +18,7 @@
             <Button android:layout_width="wrap_content"
                     android:layout_weight="1"
                     android:text="查询"
+                    android:textColor="#288AD1"
                     android:id="@+id/query"
                     android:layout_height="wrap_content"/>
         </LinearLayout>

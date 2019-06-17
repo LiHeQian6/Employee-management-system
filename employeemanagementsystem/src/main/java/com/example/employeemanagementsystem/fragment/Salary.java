@@ -7,11 +7,14 @@ import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.*;
 import com.example.employeemanagementsystem.CustomAdapter;
+import com.example.employeemanagementsystem.DiaLog;
 import com.example.employeemanagementsystem.R;
 import com.example.employeemanagementsystem.bean.Jobs;
 import com.example.employeemanagementsystem.bean.Pay_level;
@@ -76,7 +79,26 @@ public class Salary extends Fragment {
         add.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                FragmentManager fragmentManager=getFragmentManager();
+                FragmentTransaction transaction=fragmentManager.beginTransaction();
+                Pay_level pay_level=new Pay_level();
+                DiaLog diaLog=new DiaLog(pay_level,1);
+                if(!diaLog.isAdded())
+                    transaction.add(diaLog,"INFO");
+                transaction.show(diaLog);
+                transaction.commit();
+            }
+        });
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                FragmentManager fragmentManager=getFragmentManager();
+                FragmentTransaction transaction=fragmentManager.beginTransaction();
+                DiaLog diaLog=new DiaLog(data.get(position),0);
+                if(!diaLog.isAdded())
+                    transaction.add(diaLog,"INFO");
+                transaction.show(diaLog);
+                transaction.commit();
             }
         });
         return view;
@@ -106,7 +128,7 @@ public class Salary extends Fragment {
             public void run() {
 
                 try {
-                    URL url = new URL("http://192.168.1.102:8080/EmployeeManagementSystem_war_exploded/SalaryServlet");
+                    URL url = new URL("http://10.7.92.249:8080/EmployeeManagementSystem_war_exploded/SalaryServlet");
                     URLConnection conn = url.openConnection();
                     InputStream in = conn.getInputStream();
                     BufferedReader reader = new BufferedReader(new InputStreamReader(in, "utf-8"));
