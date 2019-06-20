@@ -53,10 +53,11 @@ public class SalaryServlet extends HttpServlet {
                 respInt = insr.read();
             }
             Pay_levelService pay_levelService = new Pay_levelService();
-            if(pay_levelService.deletePay_level(result))
+            String r=pay_levelService.deletePay_level(result);
+            if(r.equals(""))
                 writer.write("数据删除成功");
             else
-                writer.write("数据删除失败,请确认没有员工属于该薪资水平！");
+                writer.write("数据"+r+"删除失败,请确认没有员工属于该薪资水平！");
         }
     }
 }

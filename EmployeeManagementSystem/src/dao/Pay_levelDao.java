@@ -4,6 +4,7 @@ import bean.Pay_level;
 import utils.DBUtil;
 
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 
 public class Pay_levelDao {
@@ -26,14 +27,23 @@ public class Pay_levelDao {
         }
         return true;
     }
-    public boolean deletePay_level(List id){
+    public String deletePay_level(List id){
         int n=0;
+        String r="";
         DBUtil dbUtil=DBUtil.getIstance();
         for (int i = 0; i <id.size() ; i++) {
             n=dbUtil.upDate("delete from pay_level where level_id="+id.get(i)+";");
-            if(n==0)
-                return false;
+            if(n==0) {
+                ResultSet rs=dbUtil.query("select * from pay_level where level_id="+id.get(i)+";");
+                try {
+                    rs.next();
+                    r=r+rs.getString("name")+" ";
+                    continue;
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
         }
-        return true;
+        return r;
     }
 }

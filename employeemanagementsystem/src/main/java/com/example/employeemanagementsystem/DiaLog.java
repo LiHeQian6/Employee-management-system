@@ -125,7 +125,6 @@ public class DiaLog extends DialogFragment {
                 @Override
                 public void onClick(View v) {
                     if (changeListener.isDelete(true)) {
-                        Toast.makeText(getContext(), "本地数据删除成功", Toast.LENGTH_SHORT).show();
                         getDialog().dismiss();
                     }
                 }
@@ -265,7 +264,7 @@ public class DiaLog extends DialogFragment {
                             pay_level.setName(salaryName.getText().toString());
                             pay_level.setBase_pay(Double.parseDouble(base_pay.getText().toString()));
                             addr=pay_level;
-                            if(changeListener.getData(addr));
+                            if(changeListener.getData(addr))
                                 getDialog().dismiss();
                         }else
                             Toast.makeText(getContext(),"薪资水平和基础工资不能为空！",Toast.LENGTH_SHORT).show();

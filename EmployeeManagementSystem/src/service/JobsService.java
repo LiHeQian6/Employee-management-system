@@ -55,7 +55,7 @@ public class JobsService {
         JobsDao jobsDao=new JobsDao();
         return jobsDao.updateJobs(list);
     }
-    public boolean deleteJobs(String delete){
+    public String deleteJobs(String delete){
         List list = new ArrayList();
         try {
             JSONArray array=new JSONArray(delete);

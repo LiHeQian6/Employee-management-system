@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component inheritJdk="true">
+	<output-test url="file://$MODULE_DIR$/web/WEB-INF/classes"/>
+	<exclude-output/>
+	<contentEntry url="file://$MODULE_DIR$"/>
+	<lib name="lib" scope="COMPILE">
+		<relative-module-cls project-related="file://$PROJECT_DIR$/EmployeeManagementSystem/web/WEB-INF/lib"/>
+	</lib>
+	<levels>
+		<level name="Tomcat 9.0.17" value="application_server_libraries"/>
+		<level name="json-20180813" value="project"/>
+	</levels>
+</component>

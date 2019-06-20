@@ -49,8 +49,8 @@ public class Position extends Fragment {
                     listView.setAdapter(adapter);
                     break;
                 case 101:
-                    if(((String)msg.obj).equals("数据删除失败,请确认没有员工任职该职位！"))
-                        Toast.makeText(getContext(),(String)msg.obj,Toast.LENGTH_SHORT).show();
+                    if(((String)msg.obj).contains("删除失败,请确认没有员工任职该职位！"))
+                        Toast.makeText(getContext(),(String)msg.obj,Toast.LENGTH_LONG).show();
                     break;
             }
         }
@@ -73,8 +73,11 @@ public class Position extends Fragment {
             @Override
             public void onClick(View v) {
                 EditText text=view.findViewById(R.id.text);
-                if("".equals(text.getText().toString()))
-                    GetData();
+                if("".equals(text.getText().toString())) {
+                    list.clear();
+                    list.addAll(data);
+                    adapter.notifyDataSetChanged();
+                }
                 else
                     QuaryPosition(text.getText().toString());
             }
@@ -102,7 +105,7 @@ public class Position extends Fragment {
                         data.add(jobs);
                         change.add(jobs);
                         adapter.notifyDataSetChanged();
-                        Toast.makeText(getContext(),"本地数据添加成功",Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(),"数据添加成功",Toast.LENGTH_SHORT).show();
                         return true;
                     }
                     @Override
@@ -124,7 +127,7 @@ public class Position extends Fragment {
             public void onItemClick(AdapterView<?> parent, View view, final int position, long id) {
                 FragmentManager fragmentManager=getFragmentManager();
                 FragmentTransaction transaction=fragmentManager.beginTransaction();
-                DiaLog diaLog=new DiaLog(data.get(position),0, new DiaLog.onChangeListener() {
+                DiaLog diaLog=new DiaLog(list.get(position),0, new DiaLog.onChangeListener() {
                     @Override
                     public boolean getData(Object obj) {
                         Jobs jobs=(Jobs)obj;
@@ -149,7 +152,7 @@ public class Position extends Fragment {
                         data.set(position,jobs);
                         change.add(jobs);
                         adapter.notifyDataSetChanged();
-                        Toast.makeText(getContext(),"本地数据修改成功",Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(),"数据修改成功",Toast.LENGTH_SHORT).show();
                         return true;
                     }
 
@@ -167,6 +170,7 @@ public class Position extends Fragment {
                             data.remove(position);
                             Log.e("职位删除表",delete.toString());
                             adapter.notifyDataSetChanged();
+                            Toast.makeText(getContext(),"数据删除成功",Toast.LENGTH_SHORT).show();
                             return true;
                         }
                         return false;

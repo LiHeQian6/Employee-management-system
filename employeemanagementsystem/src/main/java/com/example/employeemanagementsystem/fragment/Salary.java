@@ -50,8 +50,8 @@ public class Salary extends Fragment {
                     listView.setAdapter(adapter);
                     break;
                 case 101:
-                    if(((String)msg.obj).equals("数据删除失败,请确认没有员工属于该薪资水平！"))
-                        Toast.makeText(getContext(),(String)msg.obj,Toast.LENGTH_SHORT).show();
+                    if(((String)msg.obj).contains("删除失败,请确认没有员工属于该薪资水平！"))
+                        Toast.makeText(getContext(),(String)msg.obj,Toast.LENGTH_LONG).show();
                     break;
             }
         }
@@ -66,7 +66,7 @@ public class Salary extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         final View view=inflater.inflate(R.layout.salary,container,false);
-        ImageView add=view.findViewById(R.id.add);
+        final ImageView add=view.findViewById(R.id.add);
         Button quary=view.findViewById(R.id.query);
         listView=view.findViewById(R.id.lv_name);
         GetData();
@@ -74,8 +74,12 @@ public class Salary extends Fragment {
             @Override
             public void onClick(View v) {
                 EditText text=view.findViewById(R.id.text);
-                if("".equals(text.getText().toString()))
-                    GetData();
+                if("".equals(text.getText().toString())){
+                    list.clear();
+                    list.addAll(data);
+                    adapter.notifyDataSetChanged();
+                }
+
                 else
                     QuarySalary(text.getText().toString());
             }
@@ -100,7 +104,7 @@ public class Salary extends Fragment {
                         data.add(pay_level);
                         change.add(pay_level);
                         adapter.notifyDataSetChanged();
-                        Toast.makeText(getContext(),"本地数据添加成功",Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(),"数据添加成功",Toast.LENGTH_SHORT).show();
                         return true;
                     }
 
@@ -120,7 +124,7 @@ public class Salary extends Fragment {
             public void onItemClick(AdapterView<?> parent, View view, final int position, long id) {
                 FragmentManager fragmentManager=getFragmentManager();
                 FragmentTransaction transaction=fragmentManager.beginTransaction();
-                DiaLog diaLog=new DiaLog(data.get(position),0, new DiaLog.onChangeListener() {
+                DiaLog diaLog=new DiaLog(list.get(position),0, new DiaLog.onChangeListener() {
                     @Override
                     public boolean getData(Object obj) {
                         Pay_level pay_level=(Pay_level)obj;
@@ -145,7 +149,7 @@ public class Salary extends Fragment {
                         data.set(position,pay_level);
                         change.add(pay_level);
                         adapter.notifyDataSetChanged();
-                        Toast.makeText(getContext(),"本地数据修改成功",Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(),"数据修改成功",Toast.LENGTH_SHORT).show();
                         return true;
                     }
 
@@ -163,6 +167,7 @@ public class Salary extends Fragment {
                             data.remove(position);
                             Log.e("薪资删除表",delete.toString());
                             adapter.notifyDataSetChanged();
+                            Toast.makeText(getContext(),"数据删除成功",Toast.LENGTH_SHORT).show();
                             return true;
                         }
                         return false;

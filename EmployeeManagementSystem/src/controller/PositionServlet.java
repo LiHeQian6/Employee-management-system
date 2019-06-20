@@ -52,10 +52,11 @@ public class PositionServlet extends HttpServlet {
                 respInt = insr.read();
             }
             JobsService jobsService = new JobsService();
-            if(jobsService.deleteJobs(result))
+            String r=jobsService.deleteJobs(result);
+            if(r.equals(""))
                 writer.write("数据删除成功");
             else
-                writer.write("数据删除失败,请确认没有员工任职该职位！");
+                writer.write("数据"+r+"删除失败,请确认没有员工任职该职位！");
         }
     }
 }

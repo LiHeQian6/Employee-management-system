@@ -56,7 +56,7 @@ public class Pay_levelService {
         Pay_levelDao jobsDao=new Pay_levelDao();
         return jobsDao.updatePay_level(list);
     }
-    public boolean deletePay_level(String delete){
+    public String deletePay_level(String delete){
         List list = new ArrayList();
         try {
             JSONArray array=new JSONArray(delete);

@@ -72,8 +72,11 @@ public class Staff extends Fragment {
             @Override
             public void onClick(View v) {
                 EditText text=view.findViewById(R.id.text);
-                if("".equals(text.getText().toString()))
-                    GetData();
+                if("".equals(text.getText().toString())){
+                    list.clear();
+                    list.addAll(data);
+                    adapter.notifyDataSetChanged();
+                }
                 else
                     QuaryStaff(text.getText().toString());
             }
@@ -98,7 +101,7 @@ public class Staff extends Fragment {
                         data.add(obj);
                         change.add(employee);
                         adapter.notifyDataSetChanged();
-                        Toast.makeText(getContext(),"本地数据添加成功",Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(),"数据添加成功",Toast.LENGTH_SHORT).show();
                         return true;
                     }
 
@@ -118,7 +121,7 @@ public class Staff extends Fragment {
             public void onItemClick(AdapterView<?> parent, View view, final int position, long id) {
                 FragmentManager fragmentManager=getFragmentManager();
                 FragmentTransaction transaction=fragmentManager.beginTransaction();
-                DiaLog diaLog=new DiaLog(data.get(position), 0, new DiaLog.onChangeListener() {
+                DiaLog diaLog=new DiaLog(list.get(position), 0, new DiaLog.onChangeListener() {
                     @Override
                     public boolean getData(Object obj) {
                         Employee employee=new Employee(((Employee)obj).getId(),((Employee)obj).getName(),((Employee)obj).getNum(),((Employee)obj).getJob(),((Employee)obj).getPay_level(),((Employee)obj).getBase_pay());
@@ -148,7 +151,7 @@ public class Staff extends Fragment {
                         data.set(position,obj);
                         change.add(employee);
                         adapter.notifyDataSetChanged();
-                        Toast.makeText(getContext(),"本地数据修改成功",Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(),"数据修改成功",Toast.LENGTH_SHORT).show();
                         return true;
                     }
 
@@ -166,6 +169,7 @@ public class Staff extends Fragment {
                             data.remove(position);
                             Log.e("员工删除表",delete.toString());
                             adapter.notifyDataSetChanged();
+                            Toast.makeText(getContext(),"数据删除成功",Toast.LENGTH_SHORT).show();
                             return true;
                         }
                         return false;
