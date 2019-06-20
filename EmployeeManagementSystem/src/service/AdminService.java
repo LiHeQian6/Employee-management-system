@@ -18,4 +18,12 @@ public class AdminService {
             return true;
         return false;
     }
+
+    public boolean Register(String accont,String pwd){
+        Admin admin=new Admin(accont,pwd);
+        AdminDao adminDao=new AdminDao();
+        if(!adminDao.addAdmin(admin))
+            return false;
+        return true;
+    }
 }

@@ -10,6 +10,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.util.List;
 
@@ -23,9 +24,39 @@ public class SalaryServlet extends HttpServlet {
         request.setCharacterEncoding("utf-8");
         response.setContentType("text/html;charset=utf-8");
         PrintWriter writer=response.getWriter();
-        Pay_levelService pay_levelService=new Pay_levelService();
-        List list=pay_levelService.QuaryPay_level();
-        JSONArray jsonArray=new JSONArray(list);
-        writer.write(jsonArray.toString());
+        String change=request.getParameter("change");
+        String delete=request.getParameter("delete");
+        if(change==null&&delete==null){
+            Pay_levelService pay_levelService=new Pay_levelService();
+            List list=pay_levelService.QuaryPay_level();
+            JSONArray jsonArray=new JSONArray(list);
+            writer.write(jsonArray.toString());
+        }else if(delete==null&&change.equals("true")) {
+            InputStreamReader insr = new InputStreamReader(request.getInputStream(),"utf-8");
+            String result = "";
+            int respInt = insr.read();
+            while(respInt!=-1) {
+                result +=(char)respInt;
+                respInt = insr.read();
+            }
+            Pay_levelService pay_levelService = new Pay_levelService();
+            if(pay_levelService.updatePay_level(result))
+                writer.write("上传成功");
+            else
+                writer.write("上传失败");
+        }else if(change==null&&delete.equals("true")){
+            InputStreamReader insr = new InputStreamReader(request.getInputStream(),"utf-8");
+            String result = "";
+            int respInt = insr.read();
+            while(respInt!=-1) {
+                result +=(char)respInt;
+                respInt = insr.read();
+            }
+            Pay_levelService pay_levelService = new Pay_levelService();
+            if(pay_levelService.deletePay_level(result))
+                writer.write("数据删除成功");
+            else
+                writer.write("数据删除失败,请确认没有员工属于该薪资水平！");
+        }
     }
 }

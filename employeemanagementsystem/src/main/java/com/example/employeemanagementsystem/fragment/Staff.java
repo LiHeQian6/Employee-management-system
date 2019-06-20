@@ -18,16 +18,11 @@ import com.example.employeemanagementsystem.CustomAdapter;
 import com.example.employeemanagementsystem.DiaLog;
 import com.example.employeemanagementsystem.R;
 import com.example.employeemanagementsystem.bean.Employee;
-import com.example.employeemanagementsystem.bean.Jobs;
-import com.example.employeemanagementsystem.bean.Pay_level;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
@@ -52,11 +47,17 @@ public class Staff extends Fragment {
                     adapter=new CustomAdapter(getContext(),list,R.layout.item_layout);
                     listView.setAdapter(adapter);
                     break;
+                case 101:
+                    if(((String)msg.obj).equals("数据删除失败"))
+                        Toast.makeText(getContext(),(String)msg.obj,Toast.LENGTH_SHORT).show();
+                    break;
             }
         }
     };
     private List list = new ArrayList();
     private List data = new ArrayList();
+    private List change = new ArrayList();
+    private List delete = new ArrayList();
     private ListView listView;
     private CustomAdapter adapter;
     @Nullable
@@ -83,7 +84,29 @@ public class Staff extends Fragment {
                 FragmentManager fragmentManager=getFragmentManager();
                 FragmentTransaction transaction=fragmentManager.beginTransaction();
                 Employee employee=new Employee();
-                DiaLog diaLog=new DiaLog(employee,1);
+                DiaLog diaLog=new DiaLog(employee,1, new DiaLog.onChangeListener() {
+                    @Override
+                    public boolean getData(Object obj) {
+                        Employee employee=new Employee(((Employee)obj).getId(),((Employee)obj).getName(),((Employee)obj).getNum(),((Employee)obj).getJob(),((Employee)obj).getPay_level(),((Employee)obj).getBase_pay());
+                        for (int i = 0; i <list.size() ; i++) {
+                            if(((Employee)list.get(i)).getNum()==employee.getNum()){
+                                Toast.makeText(getContext(),"已存在该工号",Toast.LENGTH_SHORT).show();
+                                return false;
+                            }
+                        }
+                        list.add(obj);
+                        data.add(obj);
+                        change.add(employee);
+                        adapter.notifyDataSetChanged();
+                        Toast.makeText(getContext(),"本地数据添加成功",Toast.LENGTH_SHORT).show();
+                        return true;
+                    }
+
+                    @Override
+                    public boolean isDelete(boolean is) {
+                        return false;
+                    }
+                });
                 if(!diaLog.isAdded())
                     transaction.add(diaLog,"INFO");
                 transaction.show(diaLog);
@@ -92,10 +115,62 @@ public class Staff extends Fragment {
         });
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            public void onItemClick(AdapterView<?> parent, View view, final int position, long id) {
                 FragmentManager fragmentManager=getFragmentManager();
                 FragmentTransaction transaction=fragmentManager.beginTransaction();
-                DiaLog diaLog=new DiaLog(data.get(position),0);
+                DiaLog diaLog=new DiaLog(data.get(position), 0, new DiaLog.onChangeListener() {
+                    @Override
+                    public boolean getData(Object obj) {
+                        Employee employee=new Employee(((Employee)obj).getId(),((Employee)obj).getName(),((Employee)obj).getNum(),((Employee)obj).getJob(),((Employee)obj).getPay_level(),((Employee)obj).getBase_pay());
+                        if(employee.getNum()<=0){
+                            Toast.makeText(getContext(),"工号不能小于等于0",Toast.LENGTH_SHORT).show();
+                            return false;
+                        }
+                        if(employee.getId()==((Employee)list.get(position)).getId()&&
+                        employee.getNum()==((Employee)list.get(position)).getNum()&&
+                        employee.getName().equals(((Employee)list.get(position)).getName())&&
+                        employee.getJob().equals(((Employee)list.get(position)).getJob())&&
+                        employee.getPay_level().equals(((Employee)list.get(position)).getPay_level())&&
+                        employee.getBase_pay()==((Employee)list.get(position)).getBase_pay())
+                            return true;
+                        for (int i = 0; i <list.size() ; i++) {
+                            if(i!=position&&((Employee)list.get(i)).getNum()==employee.getNum()){
+                                Toast.makeText(getContext(),"已存在该工号",Toast.LENGTH_SHORT).show();
+                                return false;
+                            }
+                        }
+                        for (int i = 0; i <change.size() ; i++) {
+                            if(((Employee)change.get(i)).getName().equals(((Employee)list.get(position)).getName())){
+                                change.remove(i--);
+                            }
+                        }
+                        list.set(position,obj);
+                        data.set(position,obj);
+                        change.add(employee);
+                        adapter.notifyDataSetChanged();
+                        Toast.makeText(getContext(),"本地数据修改成功",Toast.LENGTH_SHORT).show();
+                        return true;
+                    }
+
+                    @Override
+                    public boolean isDelete(boolean is) {
+                        if(is){
+                            if(((Employee)data.get(position)).getId()!=-1)
+                                delete.add(((Employee)data.get(position)).getId());
+                            for (int i = 0; i <change.size() ; i++) {
+                                if(((Employee)change.get(i)).getName().equals(((Employee)list.get(position)).getName())){
+                                    change.remove(i--);
+                                }
+                            }
+                            list.remove(position);
+                            data.remove(position);
+                            Log.e("员工删除表",delete.toString());
+                            adapter.notifyDataSetChanged();
+                            return true;
+                        }
+                        return false;
+                    }
+                });
                 if(!diaLog.isAdded())
                     transaction.add(diaLog,"INFO");
                 transaction.show(diaLog);
@@ -103,6 +178,115 @@ public class Staff extends Fragment {
             }
         });
         return view;
+    }
+    /**
+     * 上传数据
+     */
+    @Override
+    public void onStop() {
+        super.onStop();
+        if(this.change.size()!=0) {
+            String change = null;
+            try {
+                JSONArray changeArrary = new JSONArray();
+                int length = this.change.size();
+                for (int i = 0; i < length; i++) {
+                    Employee employee = (Employee) this.change.get(i);
+                    int id = employee.getId();
+                    String name = employee.getName();
+                    int num = employee.getNum();
+                    String job = employee.getJob();
+                    String pay_level = employee.getPay_level();
+                    double base_pay = employee.getBase_pay();
+                    JSONObject Object = new JSONObject();
+                    Object.put("name", name);
+                    Object.put("id", id);
+                    Object.put("num", num);
+                    Object.put("job", job);
+                    Object.put("pay_level", pay_level);
+                    Object.put("base_pay", base_pay);
+                    changeArrary.put(Object);
+                }
+                change = changeArrary.toString();
+
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            final String finalChange = change;
+            new Thread() {
+                @Override
+                public void run() {
+                    try {
+                        URL url = new URL("http://" + getResources().getString(R.string.IP) + ":8080/EmployeeManagementSystem_war_exploded/StaffServlet?change=true");
+                        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                        conn.setDoOutput(true);
+                        conn.setRequestMethod("POST");
+                        conn.setRequestProperty("Content-Type", "application/json");
+                        conn.setRequestProperty("charset", "utf-8");
+                        OutputStream stream = conn.getOutputStream();
+                        stream.write(finalChange.getBytes());
+                        stream.close();
+                        InputStream in = conn.getInputStream();
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(in, "utf-8"));
+                        String jsonString = reader.readLine();
+                        Message message = new Message();
+                        message.what = 101;
+                        message.obj =jsonString;
+                        handler.sendMessage(message);
+                    } catch (MalformedURLException e) {
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }.start();
+            this.change.clear();
+        }
+        if(delete.size()!=0){
+            String delete = null;
+            try {
+                JSONArray changeArrary = new JSONArray();
+                int length = this.delete.size();
+                for (int i = 0; i < length; i++) {
+                    JSONObject Object = new JSONObject();
+                    Object.put("id", this.delete.get(i));
+                    changeArrary.put(Object);
+                }
+                delete = changeArrary.toString();
+
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            final String finalChange = delete;
+            new Thread() {
+                @Override
+                public void run() {
+                    try {
+                        URL url = new URL("http://" + getResources().getString(R.string.IP) + ":8080/EmployeeManagementSystem_war_exploded/StaffServlet?delete=true");
+                        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                        conn.setDoOutput(true);
+                        conn.setRequestMethod("POST");
+                        conn.setRequestProperty("Content-Type", "application/json");
+                        conn.setRequestProperty("charset", "utf-8");
+                        OutputStream stream = conn.getOutputStream();
+                        stream.write(finalChange.getBytes());
+                        stream.close();
+                        InputStream in = conn.getInputStream();
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(in, "utf-8"));
+                        String jsonString = reader.readLine();
+                        Message message = new Message();
+                        message.what = 101;
+                        message.obj =jsonString;
+                        handler.sendMessage(message);
+                    } catch (MalformedURLException e) {
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }.start();
+            this.delete.clear();
+        }
     }
 
     /**
@@ -127,9 +311,8 @@ public class Staff extends Fragment {
         new Thread() {
             @Override
             public void run() {
-
                 try {
-                    URL url = new URL("http://10.7.92.249:8080/EmployeeManagementSystem_war_exploded/StaffServlet");
+                    URL url = new URL("http://"+getResources().getString(R.string.IP)+":8080/EmployeeManagementSystem_war_exploded/StaffServlet");
                     URLConnection conn = url.openConnection();
                     InputStream in = conn.getInputStream();
                     BufferedReader reader = new BufferedReader(new InputStreamReader(in, "utf-8"));
@@ -142,6 +325,7 @@ public class Staff extends Fragment {
                             Employee employee=new Employee();
                             employee.setId(jsonObject.getInt("id"));
                             employee.setName(jsonObject.getString("name"));
+                            employee.setNum(jsonObject.getInt("num"));
                             employee.setJob(jsonObject.getString("job"));
                             employee.setPay_level(jsonObject.getString("pay_level"));
                             employee.setBase_pay(jsonObject.getDouble("base_pay"));
@@ -163,4 +347,5 @@ public class Staff extends Fragment {
         }.start();
 
     }
+
 }

@@ -9,6 +9,7 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,21 +17,18 @@ import android.widget.*;
 import com.example.employeemanagementsystem.CustomAdapter;
 import com.example.employeemanagementsystem.DiaLog;
 import com.example.employeemanagementsystem.R;
-import com.example.employeemanagementsystem.bean.Jobs;
 import com.example.employeemanagementsystem.bean.Pay_level;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
+
 
 
 public class Salary extends Fragment {
@@ -51,11 +49,17 @@ public class Salary extends Fragment {
                     adapter=new CustomAdapter(getContext(),list,R.layout.item_layout);
                     listView.setAdapter(adapter);
                     break;
+                case 101:
+                    if(((String)msg.obj).equals("数据删除失败,请确认没有员工属于该薪资水平！"))
+                        Toast.makeText(getContext(),(String)msg.obj,Toast.LENGTH_SHORT).show();
+                    break;
             }
         }
     };
     private List list = new ArrayList();
     private List data = new ArrayList();
+    private List change = new ArrayList();
+    private List delete = new ArrayList();
     private ListView listView;
     private CustomAdapter adapter;
     @Nullable
@@ -82,7 +86,29 @@ public class Salary extends Fragment {
                 FragmentManager fragmentManager=getFragmentManager();
                 FragmentTransaction transaction=fragmentManager.beginTransaction();
                 Pay_level pay_level=new Pay_level();
-                DiaLog diaLog=new DiaLog(pay_level,1);
+                DiaLog diaLog=new DiaLog(pay_level, 1, new DiaLog.onChangeListener() {
+                    @Override
+                    public boolean getData(Object obj) {
+                        Pay_level pay_level=(Pay_level)obj;
+                        for (int i = 0; i <list.size() ; i++) {
+                            if(((Pay_level)list.get(i)).getName().equals(pay_level.getName())){
+                                Toast.makeText(getContext(),"已存在该薪资水平",Toast.LENGTH_SHORT).show();
+                                return false;
+                            }
+                        }
+                        list.add(pay_level);
+                        data.add(pay_level);
+                        change.add(pay_level);
+                        adapter.notifyDataSetChanged();
+                        Toast.makeText(getContext(),"本地数据添加成功",Toast.LENGTH_SHORT).show();
+                        return true;
+                    }
+
+                    @Override
+                    public boolean isDelete(boolean is) {
+                        return false;
+                    }
+                });
                 if(!diaLog.isAdded())
                     transaction.add(diaLog,"INFO");
                 transaction.show(diaLog);
@@ -91,10 +117,57 @@ public class Salary extends Fragment {
         });
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            public void onItemClick(AdapterView<?> parent, View view, final int position, long id) {
                 FragmentManager fragmentManager=getFragmentManager();
                 FragmentTransaction transaction=fragmentManager.beginTransaction();
-                DiaLog diaLog=new DiaLog(data.get(position),0);
+                DiaLog diaLog=new DiaLog(data.get(position),0, new DiaLog.onChangeListener() {
+                    @Override
+                    public boolean getData(Object obj) {
+                        Pay_level pay_level=(Pay_level)obj;
+                        if(pay_level.getName().equals("")){
+                            Toast.makeText(getContext(),"薪资水平不能为空",Toast.LENGTH_SHORT).show();
+                            return false;
+                        }
+                        if(pay_level.getLevel_id()==((Pay_level)list.get(position)).getLevel_id()&&pay_level.getName().equals(((Pay_level)list.get(position)).getName())&&pay_level.getBase_pay()==((Pay_level)list.get(position)).getBase_pay())
+                            return true;
+                        for (int i = 0; i <list.size() ; i++) {
+                            if(i!=position&&((Pay_level)list.get(i)).getName().equals(pay_level.getName())){
+                                Toast.makeText(getContext(),"已存在该薪资水平",Toast.LENGTH_SHORT).show();
+                                return false;
+                            }
+                        }
+                        for (int i = 0; i <change.size() ; i++) {
+                            if(((Pay_level)change.get(i)).getName().equals(((Pay_level)list.get(position)).getName())){
+                                change.remove(i--);
+                            }
+                        }
+                        list.set(position,pay_level);
+                        data.set(position,pay_level);
+                        change.add(pay_level);
+                        adapter.notifyDataSetChanged();
+                        Toast.makeText(getContext(),"本地数据修改成功",Toast.LENGTH_SHORT).show();
+                        return true;
+                    }
+
+                    @Override
+                    public boolean isDelete(boolean is) {
+                        if(is){
+                            if(((Pay_level)data.get(position)).getLevel_id()!=-1)
+                                delete.add(((Pay_level)data.get(position)).getLevel_id());
+                            for (int i = 0; i <change.size() ; i++) {
+                                if(((Pay_level)change.get(i)).getName().equals(((Pay_level)list.get(position)).getName())){
+                                    change.remove(i--);
+                                }
+                            }
+                            list.remove(position);
+                            data.remove(position);
+                            Log.e("薪资删除表",delete.toString());
+                            adapter.notifyDataSetChanged();
+                            return true;
+                        }
+                        return false;
+                    }
+                });
                 if(!diaLog.isAdded())
                     transaction.add(diaLog,"INFO");
                 transaction.show(diaLog);
@@ -103,6 +176,112 @@ public class Salary extends Fragment {
         });
         return view;
     }
+
+    /**
+     * 上传数据
+     */
+    @Override
+    public void onStop() {
+        super.onStop();
+        if(this.change.size()!=0) {
+            String change = null;
+            try {
+                JSONArray changeArrary = new JSONArray();
+                int length = this.change.size();
+                for (int i = 0; i < length; i++) {
+                    Pay_level pay_level = (Pay_level) this.change.get(i);
+                    int Level_id = pay_level.getLevel_id();
+                    String name = pay_level.getName();
+                    double base_pay = pay_level.getBase_pay();
+                    JSONObject Object = new JSONObject();
+                    Object.put("name", name);
+                    Object.put("id", Level_id);
+                    Object.put("base_pay", base_pay);
+                    changeArrary.put(Object);
+                }
+                change = changeArrary.toString();
+
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            final String finalChange = change;
+            new Thread() {
+                @Override
+                public void run() {
+                    try {
+                        URL url = new URL("http://" + getResources().getString(R.string.IP) + ":8080/EmployeeManagementSystem_war_exploded/SalaryServlet?change=true");
+                        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                        conn.setDoOutput(true);
+                        conn.setRequestMethod("POST");
+                        conn.setRequestProperty("Content-Type", "application/json");
+                        conn.setRequestProperty("charset", "utf-8");
+                        OutputStream stream = conn.getOutputStream();
+                        stream.write(finalChange.getBytes());
+                        stream.close();
+                        InputStream in = conn.getInputStream();
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(in, "utf-8"));
+                        String jsonString = reader.readLine();
+                        Message message = new Message();
+                        message.what = 101;
+                        message.obj =jsonString;
+                        handler.sendMessage(message);
+                    } catch (MalformedURLException e) {
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }.start();
+            this.change.clear();
+        }
+        if(delete.size()!=0){
+            String delete = null;
+            try {
+                JSONArray changeArrary = new JSONArray();
+                int length = this.delete.size();
+                for (int i = 0; i < length; i++) {
+                    JSONObject Object = new JSONObject();
+                    Object.put("id", this.delete.get(i));
+                    changeArrary.put(Object);
+                }
+                delete = changeArrary.toString();
+
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            final String finalChange = delete;
+            new Thread() {
+                @Override
+                public void run() {
+                    try {
+                        URL url = new URL("http://" + getResources().getString(R.string.IP) + ":8080/EmployeeManagementSystem_war_exploded/SalaryServlet?delete=true");
+                        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                        conn.setDoOutput(true);
+                        conn.setRequestMethod("POST");
+                        conn.setRequestProperty("Content-Type", "application/json");
+                        conn.setRequestProperty("charset", "utf-8");
+                        OutputStream stream = conn.getOutputStream();
+                        stream.write(finalChange.getBytes());
+                        stream.close();
+                        InputStream in = conn.getInputStream();
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(in, "utf-8"));
+                        String jsonString = reader.readLine();
+                        Message message = new Message();
+                        message.what = 101;
+                        message.obj =jsonString;
+                        handler.sendMessage(message);
+                    } catch (MalformedURLException e) {
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }.start();
+            this.delete.clear();
+        }
+    }
+
+
 
     /**
      * 查询单个薪资信息
@@ -128,7 +307,7 @@ public class Salary extends Fragment {
             public void run() {
 
                 try {
-                    URL url = new URL("http://10.7.92.249:8080/EmployeeManagementSystem_war_exploded/SalaryServlet");
+                    URL url = new URL("http://"+getResources().getString(R.string.IP)+":8080/EmployeeManagementSystem_war_exploded/SalaryServlet");
                     URLConnection conn = url.openConnection();
                     InputStream in = conn.getInputStream();
                     BufferedReader reader = new BufferedReader(new InputStreamReader(in, "utf-8"));

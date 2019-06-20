@@ -13,7 +13,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowManager;
 import android.widget.*;
 import com.example.employeemanagementsystem.CustomAdapter;
 import com.example.employeemanagementsystem.DiaLog;
@@ -22,11 +21,8 @@ import com.example.employeemanagementsystem.bean.Jobs;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
@@ -51,6 +47,10 @@ public class Position extends Fragment {
                     data.addAll((List) msg.obj);
                     adapter=new CustomAdapter(getContext(),list,R.layout.item_layout);
                     listView.setAdapter(adapter);
+                    break;
+                case 101:
+                    if(((String)msg.obj).equals("数据删除失败,请确认没有员工任职该职位！"))
+                        Toast.makeText(getContext(),(String)msg.obj,Toast.LENGTH_SHORT).show();
                     break;
             }
         }
@@ -102,8 +102,12 @@ public class Position extends Fragment {
                         data.add(jobs);
                         change.add(jobs);
                         adapter.notifyDataSetChanged();
-                        Toast.makeText(getContext(),"添加成功",Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(),"本地数据添加成功",Toast.LENGTH_SHORT).show();
                         return true;
+                    }
+                    @Override
+                    public boolean isDelete(boolean is) {
+                        return false;
                     }
                 });
                 if(!diaLog.isAdded())
@@ -117,10 +121,57 @@ public class Position extends Fragment {
          */
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            public void onItemClick(AdapterView<?> parent, View view, final int position, long id) {
                 FragmentManager fragmentManager=getFragmentManager();
                 FragmentTransaction transaction=fragmentManager.beginTransaction();
-                DiaLog diaLog=new DiaLog(data.get(position),0);
+                DiaLog diaLog=new DiaLog(data.get(position),0, new DiaLog.onChangeListener() {
+                    @Override
+                    public boolean getData(Object obj) {
+                        Jobs jobs=(Jobs)obj;
+                        if(jobs.getName().equals("")){
+                            Toast.makeText(getContext(),"职位名称不能为空",Toast.LENGTH_SHORT).show();
+                            return false;
+                        }
+                        if(jobs.getName().equals(((Jobs)list.get(position)).getName())&&jobs.getId()==((Jobs)list.get(position)).getId()&&jobs.getDescription().equals(((Jobs)list.get(position)).getDescription()))
+                            return true;
+                        for (int i = 0; i <list.size() ; i++) {
+                            if(i!=position&&((Jobs)list.get(i)).getName().equals(jobs.getName())){
+                                Toast.makeText(getContext(),"已存在该职位",Toast.LENGTH_SHORT).show();
+                                return false;
+                            }
+                        }
+                        for (int i = 0; i <change.size() ; i++) {
+                            if(((Jobs)change.get(i)).getName().equals(((Jobs)list.get(position)).getName())){
+                                change.remove(i--);
+                            }
+                        }
+                        list.set(position,jobs);
+                        data.set(position,jobs);
+                        change.add(jobs);
+                        adapter.notifyDataSetChanged();
+                        Toast.makeText(getContext(),"本地数据修改成功",Toast.LENGTH_SHORT).show();
+                        return true;
+                    }
+
+                    @Override
+                    public boolean isDelete(boolean is) {
+                        if(is){
+                            if(((Jobs)data.get(position)).getId()!=-1)
+                                delete.add(((Jobs)data.get(position)).getId());
+                            for (int i = 0; i <change.size() ; i++) {
+                                if(((Jobs)change.get(i)).getName().equals(((Jobs)list.get(position)).getName())){
+                                    change.remove(i--);
+                                }
+                            }
+                            list.remove(position);
+                            data.remove(position);
+                            Log.e("职位删除表",delete.toString());
+                            adapter.notifyDataSetChanged();
+                            return true;
+                        }
+                        return false;
+                    }
+                });
                 if(!diaLog.isAdded())
                     transaction.add(diaLog,"INFO");
                 transaction.show(diaLog);
@@ -129,6 +180,112 @@ public class Position extends Fragment {
         });
         return view;
     }
+
+    /**
+     * 上传数据
+     */
+    @Override
+    public void onStop() {
+        super.onStop();
+        if(this.change.size()!=0) {
+            String change = null;
+            try {
+                JSONArray changeArrary = new JSONArray();
+                int length = this.change.size();
+                for (int i = 0; i < length; i++) {
+                    Jobs jobs = (Jobs) this.change.get(i);
+                    int id = jobs.getId();
+                    String name = jobs.getName();
+                    String description = jobs.getDescription();
+                    JSONObject Object = new JSONObject();
+                    Object.put("name", name);
+                    Object.put("id", id);
+                    Object.put("description", description);
+                    changeArrary.put(Object);
+                }
+                change = changeArrary.toString();
+
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            final String finalChange = change;
+            new Thread() {
+                @Override
+                public void run() {
+                    try {
+                        URL url = new URL("http://" + getResources().getString(R.string.IP) + ":8080/EmployeeManagementSystem_war_exploded/PositionServlet?change=true");
+                        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                        conn.setDoOutput(true);
+                        conn.setRequestMethod("POST");
+                        conn.setRequestProperty("Content-Type", "application/json");
+                        conn.setRequestProperty("charset", "utf-8");
+                        OutputStream stream = conn.getOutputStream();
+                        stream.write(finalChange.getBytes());
+                        stream.close();
+                        InputStream in = conn.getInputStream();
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(in, "utf-8"));
+                        String jsonString = reader.readLine();
+                        Message message = new Message();
+                        message.what = 101;
+                        message.obj =jsonString;
+                        handler.sendMessage(message);
+                    } catch (MalformedURLException e) {
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }.start();
+            this.change.clear();
+        }
+        if(delete.size()!=0){
+            String delete = null;
+            try {
+                JSONArray changeArrary = new JSONArray();
+                int length = this.delete.size();
+                for (int i = 0; i < length; i++) {
+                    JSONObject Object = new JSONObject();
+                    Object.put("id", this.delete.get(i));
+                    changeArrary.put(Object);
+                }
+                delete = changeArrary.toString();
+
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            final String finalChange = delete;
+            new Thread() {
+                @Override
+                public void run() {
+                    try {
+                        URL url = new URL("http://" + getResources().getString(R.string.IP) + ":8080/EmployeeManagementSystem_war_exploded/PositionServlet?delete=true");
+                        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                        conn.setDoOutput(true);
+                        conn.setRequestMethod("POST");
+                        conn.setRequestProperty("Content-Type", "application/json");
+                        conn.setRequestProperty("charset", "utf-8");
+                        OutputStream stream = conn.getOutputStream();
+                        stream.write(finalChange.getBytes());
+                        stream.close();
+                        InputStream in = conn.getInputStream();
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(in, "utf-8"));
+                        String jsonString = reader.readLine();
+                        Message message = new Message();
+                        message.what = 101;
+                        message.obj =jsonString;
+                        handler.sendMessage(message);
+                    } catch (MalformedURLException e) {
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }.start();
+            this.delete.clear();
+        }
+    }
+
+
 
     /**
      * 查询单个职位
@@ -154,7 +311,7 @@ public class Position extends Fragment {
             public void run() {
 
                 try {
-                    URL url = new URL("http://10.7.92.249:8080/EmployeeManagementSystem_war_exploded/PositionServlet");
+                    URL url = new URL("http://"+getResources().getString(R.string.IP)+":8080/EmployeeManagementSystem_war_exploded/PositionServlet");
                     URLConnection conn = url.openConnection();
                     InputStream in = conn.getInputStream();
                     BufferedReader reader = new BufferedReader(new InputStreamReader(in, "utf-8"));

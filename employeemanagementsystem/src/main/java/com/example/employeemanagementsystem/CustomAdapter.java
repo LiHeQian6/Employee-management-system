@@ -63,7 +63,7 @@ public class CustomAdapter extends BaseAdapter {
         }else if(data.get(0) instanceof Employee){
             TextView id=convertView.findViewById(R.id.staffId);
             TextView name=convertView.findViewById(R.id.staffName);
-            id.setText(((Employee)data.get(position)).getId()+"");
+            id.setText(((Employee)data.get(position)).getNum()+"");
             name.setText(((Employee)data.get(position)).getName());
         }
         return convertView;

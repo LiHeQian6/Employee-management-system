@@ -3,18 +3,28 @@ package com.example.employeemanagementsystem.bean;
 public class Employee {
     private int id;
     private String name;
+    private int num;
     private String job;
     private String pay_level;
     private double base_pay;
 
     public Employee() { }
 
-    public Employee(int id, String name, String job, String pay_level, double base_pay) {
+    public Employee(int id, String name, int num, String job, String pay_level, double base_pay) {
         this.id = id;
         this.name = name;
+        this.num = num;
         this.job = job;
         this.pay_level = pay_level;
         this.base_pay = base_pay;
+    }
+
+    public int getNum() {
+        return num;
+    }
+
+    public void setNum(int num) {
+        this.num = num;
     }
 
     public int getId() {
@@ -62,6 +72,7 @@ public class Employee {
         return "Employee{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
+                ", num=" + num +
                 ", job='" + job + '\'' +
                 ", pay_level='" + pay_level + '\'' +
                 ", base_pay=" + base_pay +

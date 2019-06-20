@@ -238,9 +238,9 @@ public class DBUtil {
     public boolean queryDate(String ColumnName,String value,String table,String type){
         String sql = null;
         if(type.equals("int")||type.equals("double"))
-            sql = "select "+ColumnName+" from "+table+"where "+ColumnName+"="+value;
+            sql = "select "+ColumnName+" from "+table+" where "+ColumnName+"="+value;
         else
-            sql = "select "+ColumnName+" from "+table+"where "+ColumnName+"='"+value+"'";
+            sql = "select "+ColumnName+" from "+table+" where "+ColumnName+"='"+value+"'";
         ResultSet rs =query(sql);
         try {
             if (rs.next())

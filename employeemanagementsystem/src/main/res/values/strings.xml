@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">员工管理系统</string>
+    <string name="IP">192.168.137.164</string>
 </resources>

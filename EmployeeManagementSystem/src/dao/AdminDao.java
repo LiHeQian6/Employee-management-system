@@ -24,8 +24,14 @@ public class AdminDao {
         }
         return false;
     }
-    public boolean addAdmin(String sql){
-
-        return false;
+    public boolean addAdmin(Admin admin){
+        DBUtil dbUtil=DBUtil.getIstance();
+        if(dbUtil.queryDate("account",admin.getAccount(),"admin","String"))
+            return false;
+        int n=dbUtil.upDate("insert into admin (account,password) values('"+admin.getAccount()+"','"+admin.getPassword()+"');");
+        if(n>0)
+            return true;
+        else
+            return false;
     }
 }
